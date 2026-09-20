@@ -494,29 +494,42 @@ class CodeAcademyApp {
     setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing, isPerfect, feedbackMessage, currentStars), 700);
   }
 
-  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false, isPerfect = true, feedbackMessage = '', currentStars = 3) {
+  _showCompleteOverlay(bestStars, xpEarned, isNewBest = false, wasAlreadyCompleted = false, isPerfect = true, feedbackMessage = '', currentStars = 0) {
+    // 1. Mostrar ÚNICAMENTE las estrellas del intento actual en el modal inmediato
     const starsHtml = Array.from({ length: 3 }, (_, i) =>
-      `<span class="star-anim" style="animation-delay:${0.1 + i * 0.17}s">${i < stars ? '⭐' : '☆'}</span>`
+      `<span class="star-anim" style="animation-delay:${0.1 + i * 0.17}s">${i < currentStars ? '⭐' : '☆'}</span>`
     ).join('');
 
     document.getElementById('stars-display').innerHTML = starsHtml;
 
+    // Subtítulo con desglose explícito: Intento actual vs Récord histórico
+    const subtextEl = document.getElementById('stars-subtext');
+    if (subtextEl) {
+      if (wasAlreadyCompleted && bestStars > currentStars) {
+        subtextEl.innerHTML = `Intento actual: <strong>${currentStars} ${currentStars === 1 ? 'estrella' : 'estrellas'}</strong> &bull; Récord guardado: <strong>${bestStars} ⭐</strong>`;
+      } else if (isNewBest) {
+        subtextEl.innerHTML = `Intento actual: <strong>${currentStars} ${currentStars === 1 ? 'estrella' : 'estrellas'}</strong> &bull; <span style="color:var(--green);font-weight:700;">🌟 ¡Nuevo récord!</span>`;
+      } else {
+        subtextEl.innerHTML = `Intento actual: <strong>${currentStars} ${currentStars === 1 ? 'estrella' : 'estrellas'}</strong>`;
+      }
+    }
+
     const titleEl = document.getElementById('complete-title');
     if (titleEl) {
-      if (currentStars === 0 && stars === 0) {
+      if (currentStars === 0) {
         titleEl.textContent = '¡Nivel Registrado (0 Estrellas)!';
-      } else if (isPerfect) {
+      } else if (currentStars === 3) {
         titleEl.textContent = '¡Nivel Completado!';
       } else {
-        titleEl.textContent = '¡Nivel Superado!';
+        titleEl.textContent = `¡Nivel Superado (${currentStars} ${currentStars === 1 ? 'Estrella' : 'Estrellas'})!`;
       }
     }
 
     const animEl = document.getElementById('complete-animation');
     if (animEl) {
-      if (currentStars === 0 && stars === 0) {
+      if (currentStars === 0) {
         animEl.textContent = '📝';
-      } else if (isPerfect) {
+      } else if (currentStars === 3) {
         animEl.textContent = '🎉';
       } else {
         animEl.textContent = '✨';
@@ -525,11 +538,23 @@ class CodeAcademyApp {
 
     const feedbackEl = document.getElementById('complete-feedback');
     if (feedbackEl) {
-      if (currentStars === 0 && stars === 0) {
-        feedbackEl.innerHTML = `💡 <strong>Código sin cambios:</strong> Avanzas al siguiente nivel, pero obtienes <strong>0 estrellas</strong> porque no resolviste el reto.<br><small style="opacity:0.85;">Pulsa 'Repasar Nivel' cuando quieras resolverlo y conseguir tus 3 estrellas.</small>`;
+      if (currentStars === 0) {
+        let text = `💡 <strong>Código sin cambios:</strong> Avanzas al siguiente nivel, pero obtienes <strong>0 estrellas</strong> en este intento porque no resolviste el reto.`;
+        if (wasAlreadyCompleted && bestStars > 0) {
+          text += `<br><small style="opacity:0.85;">Tu récord anterior de ${bestStars} ⭐ se mantiene a salvo en tu mapa de niveles.</small>`;
+        } else {
+          text += `<br><small style="opacity:0.85;">Pulsa 'Repasar Nivel' cuando quieras resolverlo y conseguir tus 3 estrellas.</small>`;
+        }
+        feedbackEl.innerHTML = text;
         feedbackEl.classList.remove('hidden');
-      } else if (!isPerfect && feedbackMessage) {
-        feedbackEl.innerHTML = `💡 <strong>Observación constructiva:</strong> ${this._escapeHTML(feedbackMessage)} <br><small style="opacity:0.85;">Puedes usar 'Repasar Nivel' para perfeccionarlo y ganar 3 estrellas.</small>`;
+      } else if (currentStars < 3 && feedbackMessage) {
+        let text = `💡 <strong>Observación constructiva:</strong> ${this._escapeHTML(feedbackMessage)}`;
+        if (wasAlreadyCompleted && bestStars > currentStars) {
+          text += `<br><small style="opacity:0.85;">Tu récord guardado de ${bestStars} ⭐ se mantiene intacto.</small>`;
+        } else {
+          text += `<br><small style="opacity:0.85;">Puedes usar 'Repasar Nivel' para perfeccionarlo y ganar 3 estrellas.</small>`;
+        }
+        feedbackEl.innerHTML = text;
         feedbackEl.classList.remove('hidden');
       } else {
         feedbackEl.classList.add('hidden');
@@ -540,12 +565,12 @@ class CodeAcademyApp {
     if (xpEarned > 0) {
       xpText = `+${xpEarned} XP`;
     } else if (wasAlreadyCompleted) {
-      xpText = 'Récord mantenido';
+      xpText = `Récord mantenido (${bestStars} ⭐)`;
     } else {
       xpText = '+0 XP';
     }
 
-    document.getElementById('xp-earned').textContent   = xpText;
+    document.getElementById('xp-earned').textContent = xpText;
     document.getElementById('level-complete-overlay').classList.remove('hidden');
 
     if (this.currentLevel.number >= 15) {
