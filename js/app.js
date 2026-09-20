@@ -202,7 +202,8 @@ class CodeAcademyApp {
 
   reviewLevel() {
     document.getElementById('level-complete-overlay').classList.add('hidden');
-    this._toast('📖 Modo repaso activo', 'info');
+    this.switchTab('theory');
+    this._toast('📖 Modo repaso: Revisa la teoría y tu código resuelto', 'info');
   }
 
   switchTab(tab) {
@@ -213,9 +214,11 @@ class CodeAcademyApp {
     document.getElementById('tab-challenge').classList.toggle('active', !isTheory);
   }
 
-  showHint() {
+  showHint(manual = true) {
     if (!this.currentLevel) return;
-    this.hintUsed = true;
+    if (manual) {
+      this.hintUsed = true;
+    }
     document.getElementById('hint-content').innerHTML = this.currentLevel.hint;
     document.getElementById('hint-card').classList.remove('hidden');
   }
@@ -370,12 +373,9 @@ class CodeAcademyApp {
       this._onLevelComplete();
     } else {
       this._showResult('error', '❌', result.message);
-      // Auto-hint after 3 failed attempts
-      if (this.attempts >= 3 && !this.hintUsed) {
-        setTimeout(() => {
-          this.showHint();
-          this._toast('💡 Pista desbloqueada automáticamente (3 intentos)', 'info');
-        }, 600);
+      // Sugerencia amigable si hay varios intentos sin penalizar automáticamente
+      if (this.attempts === 4 && !this.hintUsed) {
+        this._toast('💡 Recuerda que puedes consultar la Pista si te atascas', 'info');
       }
     }
   }
@@ -386,10 +386,20 @@ class CodeAcademyApp {
     const prevStars = existing ? (existing.stars || 0) : 0;
     const prevXP    = existing ? (existing.xp || 0) : 0;
 
-    // Calculate stars for current attempt: start at 3, lose 1 for hint, lose 1 for 3+ attempts
+    // Cálculo accesible y coherente de estrellas:
+    // ⭐⭐⭐ 3 Estrellas: Resuelto con fluidez (hasta 5 intentos sin pista manual, o hasta 2 intentos con pista)
+    // ⭐⭐ 2 Estrellas: Resuelto con pista o tras varios intentos de depuración (hasta 8 intentos)
+    // ⭐ 1 Estrella: Resuelto con perseverancia tras múltiples intentos (> 8 intentos)
     let currentStars = 3;
-    if (this.hintUsed)     currentStars--;
-    if (this.attempts > 3) currentStars--;
+    if (this.hintUsed && this.attempts > 2) {
+      currentStars = 2;
+    }
+    if (this.attempts > 5) {
+      currentStars = 2;
+    }
+    if (this.attempts > 8 || (this.hintUsed && this.attempts > 5)) {
+      currentStars = 1;
+    }
     currentStars = Math.max(1, currentStars);
 
     // Keep highest stars record
