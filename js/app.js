@@ -393,20 +393,30 @@ class CodeAcademyApp {
   }
 
   /* ================================================================
-     CODE VALIDATION
+     CODE VALIDATION & DYNAMIC STARS
   ================================================================ */
 
   validateCode() {
     if (!this.currentLevel) return;
 
-    const code = this.editor.getValue().trim();
-    if (!code) {
-      this._showResult('warning', '⚠️', '¡Escribe o edita tu código en el editor antes de validar!');
+    const rawCode = this.editor.getValue();
+    const code = rawCode.trim();
+    const starter = (this.currentLevel.starterCode || '').trim();
+
+    this._updateOutputPanel(rawCode);
+    this.attempts++;
+
+    // 1. Código por defecto (vacío o sin cambios): Recibe 0 estrellas pero puede avanzar
+    const isUnmodified = !code ||
+      code === starter ||
+      code.replace(/\r\n/g, '\n') === starter.replace(/\r\n/g, '\n');
+
+    if (isUnmodified) {
+      const msg = 'Código inicial sin resolver: Nivel registrado con 0 estrellas. ¡Puedes avanzar o repasar para ganar estrellas!';
+      this._showResult('warning', '⚠️', msg);
+      this._onLevelComplete(false, 'Enviaste el código sin cambios respecto a la plantilla inicial.', 0);
       return;
     }
-
-    this._updateOutputPanel(code);
-    this.attempts++;
 
     let result;
     try {
@@ -415,57 +425,42 @@ class CodeAcademyApp {
       result = { success: false, message: 'Se detectó una inconsistencia de sintaxis o estructura.' };
     }
 
-    // Modo flexible y permisivo: NUNCA bloquea al usuario ni impide avanzar
     if (result.success) {
+      // 3. Código completo y correcto: Si añade lo que pide el reto correctamente, se lleva sus 3 estrellas bien merecidas
+      let stars = 3;
+      if (this.hintUsed || this.attempts > 2) {
+        stars = 2;
+      }
       this._showResult('success', '✅', result.message);
-      this._onLevelComplete(true, result.message);
+      this._onLevelComplete(true, result.message, stars);
     } else {
-      // Avanza con observaciones constructivas y penalización de estrellas
+      // 2. Código incompleto o corto: Si avanza pero le falta parte del reto (se queda corto), recibe 1 o 2 estrellas
+      let stars = 2;
+      if (this.attempts > 1 || this.hintUsed) {
+        stars = 1;
+      }
       this._showResult('warning', '⚠️', `¡Nivel superado con observaciones! ${result.message}`);
-      this._onLevelComplete(false, result.message);
+      this._onLevelComplete(false, result.message, stars);
     }
   }
 
-  _onLevelComplete(isPerfect = true, feedbackMessage = '') {
+  _onLevelComplete(isPerfect = true, feedbackMessage = '', currentStars = 3) {
     const level = this.currentLevel;
     const existing = this.state.completedLevels[level.id];
-    const prevStars = existing ? (existing.stars || 0) : 0;
+    const prevStars = existing ? (existing.stars !== undefined ? existing.stars : 0) : -1;
     const prevXP    = existing ? (existing.xp || 0) : 0;
 
-    // Sistema de penalización y evaluación de estrellas:
-    // • Perfecto a la primera y cumple con todo: 3 estrellas 🌟🌟🌟
-    // • Faltan elementos o errores estructurales a la primera, o perfecto en 2º intento: 2 estrellas 🌟🌟
-    // • Múltiples fallos o errores reiterados con pista: 1 estrella 🌟
-    let currentStars = 3;
-
-    if (isPerfect) {
-      if (this.attempts === 1 && !this.hintUsed) {
-        currentStars = 3;
-      } else if (this.attempts === 2 || this.hintUsed) {
-        currentStars = 2;
-      } else {
-        currentStars = 1;
-      }
-    } else {
-      // Incompleto o con errores de sintaxis/orden (se le permite avanzar penalizando)
-      if (this.attempts === 1 && !this.hintUsed) {
-        currentStars = 2; // Penaliza a 2 estrellas por faltantes en el primer intento
-      } else {
-        currentStars = 1; // Penaliza a 1 estrella si hubo fallos previos o se usó pista
-      }
-    }
-
-    currentStars = Math.max(1, currentStars);
+    currentStars = Math.max(0, Math.min(3, currentStars));
 
     // Guardar y actualizar siempre el récord histórico más alto en localStorage
-    const bestStars = Math.max(prevStars, currentStars);
+    const bestStars = existing ? Math.max(prevStars, currentStars) : currentStars;
     const maxLevelXP = Math.round(level.xp * (bestStars / 3));
 
     let xpEarned = 0;
     let isNewBest = false;
 
     if (!existing) {
-      // Primera vez que completa el nivel
+      // Primera vez que completa o registra el nivel
       xpEarned = maxLevelXP;
       this.state.totalXP += xpEarned;
       this.state.completedLevels[level.id] = {
@@ -475,9 +470,11 @@ class CodeAcademyApp {
       };
       this._saveState();
       this._updateDashboard();
-      this._spawnXPPopup(xpEarned);
+      if (xpEarned > 0) {
+        this._spawnXPPopup(xpEarned);
+      }
     } else if (currentStars > prevStars) {
-      // Superó su récord anterior al repetir el nivel
+      // Superó su récord anterior al repetir el nivel (ej: de 0 o 1 o 2 a 3 estrellas)
       isNewBest = true;
       xpEarned = Math.max(0, maxLevelXP - prevXP);
       this.state.totalXP += xpEarned;
@@ -494,10 +491,10 @@ class CodeAcademyApp {
       this._toast('🌟 ¡Nuevo récord de estrellas conseguido!', 'success');
     }
 
-    setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing, isPerfect, feedbackMessage), 700);
+    setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing, isPerfect, feedbackMessage, currentStars), 700);
   }
 
-  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false, isPerfect = true, feedbackMessage = '') {
+  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false, isPerfect = true, feedbackMessage = '', currentStars = 3) {
     const starsHtml = Array.from({ length: 3 }, (_, i) =>
       `<span class="star-anim" style="animation-delay:${0.1 + i * 0.17}s">${i < stars ? '⭐' : '☆'}</span>`
     ).join('');
@@ -506,17 +503,32 @@ class CodeAcademyApp {
 
     const titleEl = document.getElementById('complete-title');
     if (titleEl) {
-      titleEl.textContent = isPerfect ? '¡Nivel Completado!' : '¡Nivel Superado!';
+      if (currentStars === 0 && stars === 0) {
+        titleEl.textContent = '¡Nivel Registrado (0 Estrellas)!';
+      } else if (isPerfect) {
+        titleEl.textContent = '¡Nivel Completado!';
+      } else {
+        titleEl.textContent = '¡Nivel Superado!';
+      }
     }
 
     const animEl = document.getElementById('complete-animation');
     if (animEl) {
-      animEl.textContent = isPerfect ? '🎉' : '✨';
+      if (currentStars === 0 && stars === 0) {
+        animEl.textContent = '📝';
+      } else if (isPerfect) {
+        animEl.textContent = '🎉';
+      } else {
+        animEl.textContent = '✨';
+      }
     }
 
     const feedbackEl = document.getElementById('complete-feedback');
     if (feedbackEl) {
-      if (!isPerfect && feedbackMessage) {
+      if (currentStars === 0 && stars === 0) {
+        feedbackEl.innerHTML = `💡 <strong>Código sin cambios:</strong> Avanzas al siguiente nivel, pero obtienes <strong>0 estrellas</strong> porque no resolviste el reto.<br><small style="opacity:0.85;">Pulsa 'Repasar Nivel' cuando quieras resolverlo y conseguir tus 3 estrellas.</small>`;
+        feedbackEl.classList.remove('hidden');
+      } else if (!isPerfect && feedbackMessage) {
         feedbackEl.innerHTML = `💡 <strong>Observación constructiva:</strong> ${this._escapeHTML(feedbackMessage)} <br><small style="opacity:0.85;">Puedes usar 'Repasar Nivel' para perfeccionarlo y ganar 3 estrellas.</small>`;
         feedbackEl.classList.remove('hidden');
       } else {
