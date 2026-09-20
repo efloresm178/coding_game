@@ -354,7 +354,7 @@ class CodeAcademyApp {
 
     const code = this.editor.getValue().trim();
     if (!code) {
-      this._showResult('warning', '⚠️', '¡Escribe algo primero! El editor no puede estar vacío.');
+      this._showResult('warning', '⚠️', '¡Escribe o edita tu código en el editor antes de validar!');
       return;
     }
 
@@ -365,45 +365,52 @@ class CodeAcademyApp {
     try {
       result = this.currentLevel.validate(code);
     } catch (err) {
-      result = { success: false, message: 'Error al evaluar el código. Verifica la sintaxis.' };
+      result = { success: false, message: 'Se detectó una inconsistencia de sintaxis o estructura.' };
     }
 
+    // Modo flexible y permisivo: NUNCA bloquea al usuario ni impide avanzar
     if (result.success) {
       this._showResult('success', '✅', result.message);
-      this._onLevelComplete();
+      this._onLevelComplete(true, result.message);
     } else {
-      this._showResult('error', '❌', result.message);
-      // Sugerencia amigable si hay varios intentos sin penalizar automáticamente
-      if (this.attempts === 4 && !this.hintUsed) {
-        this._toast('💡 Recuerda que puedes consultar la Pista si te atascas', 'info');
-      }
+      // Avanza con observaciones constructivas y penalización de estrellas
+      this._showResult('warning', '⚠️', `¡Nivel superado con observaciones! ${result.message}`);
+      this._onLevelComplete(false, result.message);
     }
   }
 
-  _onLevelComplete() {
+  _onLevelComplete(isPerfect = true, feedbackMessage = '') {
     const level = this.currentLevel;
     const existing = this.state.completedLevels[level.id];
     const prevStars = existing ? (existing.stars || 0) : 0;
     const prevXP    = existing ? (existing.xp || 0) : 0;
 
-    // Cálculo de estrellas según intentos y errores:
-    // • Completar al primer intento (sin errores previos y sin pista): 3 estrellas ⭐⭐⭐
-    // • 1 error o intento fallido previo (attempts === 2) o uso de pista: 2 estrellas ⭐⭐
-    // • 2 o más errores previos (attempts >= 3): 1 estrella ⭐
+    // Sistema de penalización y evaluación de estrellas:
+    // • Perfecto a la primera y cumple con todo: 3 estrellas 🌟🌟🌟
+    // • Faltan elementos o errores estructurales a la primera, o perfecto en 2º intento: 2 estrellas 🌟🌟
+    // • Múltiples fallos o errores reiterados con pista: 1 estrella 🌟
     let currentStars = 3;
-    if (this.attempts === 2) {
-      currentStars = 2;
-    } else if (this.attempts >= 3) {
-      currentStars = 1;
-    }
 
-    if (this.hintUsed && currentStars > 1) {
-      currentStars--;
+    if (isPerfect) {
+      if (this.attempts === 1 && !this.hintUsed) {
+        currentStars = 3;
+      } else if (this.attempts === 2 || this.hintUsed) {
+        currentStars = 2;
+      } else {
+        currentStars = 1;
+      }
+    } else {
+      // Incompleto o con errores de sintaxis/orden (se le permite avanzar penalizando)
+      if (this.attempts === 1 && !this.hintUsed) {
+        currentStars = 2; // Penaliza a 2 estrellas por faltantes en el primer intento
+      } else {
+        currentStars = 1; // Penaliza a 1 estrella si hubo fallos previos o se usó pista
+      }
     }
 
     currentStars = Math.max(1, currentStars);
 
-    // Keep highest stars record
+    // Guardar y actualizar siempre el récord histórico más alto en localStorage
     const bestStars = Math.max(prevStars, currentStars);
     const maxLevelXP = Math.round(level.xp * (bestStars / 3));
 
@@ -411,7 +418,7 @@ class CodeAcademyApp {
     let isNewBest = false;
 
     if (!existing) {
-      // First completion
+      // Primera vez que completa el nivel
       xpEarned = maxLevelXP;
       this.state.totalXP += xpEarned;
       this.state.completedLevels[level.id] = {
@@ -423,7 +430,7 @@ class CodeAcademyApp {
       this._updateDashboard();
       this._spawnXPPopup(xpEarned);
     } else if (currentStars > prevStars) {
-      // Improved stars on repeated attempt!
+      // Superó su récord anterior al repetir el nivel
       isNewBest = true;
       xpEarned = Math.max(0, maxLevelXP - prevXP);
       this.state.totalXP += xpEarned;
@@ -440,15 +447,35 @@ class CodeAcademyApp {
       this._toast('🌟 ¡Nuevo récord de estrellas conseguido!', 'success');
     }
 
-    setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing), 700);
+    setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing, isPerfect, feedbackMessage), 700);
   }
 
-  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false) {
+  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false, isPerfect = true, feedbackMessage = '') {
     const starsHtml = Array.from({ length: 3 }, (_, i) =>
       `<span class="star-anim" style="animation-delay:${0.1 + i * 0.17}s">${i < stars ? '⭐' : '☆'}</span>`
     ).join('');
 
     document.getElementById('stars-display').innerHTML = starsHtml;
+
+    const titleEl = document.getElementById('complete-title');
+    if (titleEl) {
+      titleEl.textContent = isPerfect ? '¡Nivel Completado!' : '¡Nivel Superado!';
+    }
+
+    const animEl = document.getElementById('complete-animation');
+    if (animEl) {
+      animEl.textContent = isPerfect ? '🎉' : '✨';
+    }
+
+    const feedbackEl = document.getElementById('complete-feedback');
+    if (feedbackEl) {
+      if (!isPerfect && feedbackMessage) {
+        feedbackEl.innerHTML = `💡 <strong>Observación constructiva:</strong> ${this._escapeHTML(feedbackMessage)} <br><small style="opacity:0.85;">Puedes usar 'Repasar Nivel' para perfeccionarlo y ganar 3 estrellas.</small>`;
+        feedbackEl.classList.remove('hidden');
+      } else {
+        feedbackEl.classList.add('hidden');
+      }
+    }
 
     let xpText = '';
     if (xpEarned > 0) {

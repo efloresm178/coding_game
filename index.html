@@ -285,10 +285,11 @@
       <!-- Level Complete Overlay -->
       <div class="level-complete-overlay hidden" id="level-complete-overlay">
         <div class="level-complete-card">
-          <div class="complete-animation" aria-hidden="true">&#x1F389;</div>
-          <h2 class="complete-title">Nivel Completado!</h2>
+          <div class="complete-animation" id="complete-animation" aria-hidden="true">&#x1F389;</div>
+          <h2 class="complete-title" id="complete-title">Nivel Completado!</h2>
           <div class="stars-display" id="stars-display"></div>
           <div class="xp-earned" id="xp-earned">+50 XP</div>
+          <div class="complete-feedback hidden" id="complete-feedback"></div>
           <div class="complete-actions">
             <button class="btn btn-route btn-route-1" id="btn-next-level" onclick="app.nextLevel()">
               Siguiente Nivel &#x2192;
