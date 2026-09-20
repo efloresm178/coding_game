@@ -184,100 +184,116 @@
         </aside>
 
         <section class="level-panel panel-right">
-          <div class="editor-container" id="editor-container">
-            <div class="editor-header">
-              <span class="editor-lang-badge" id="editor-lang-badge">HTML</span>
-              <div class="editor-actions">
-                <button class="btn btn-ghost btn-sm" id="btn-reset-code" onclick="app.resetCode()">
-                  &#x1F504; Reset
-                </button>
+          <!-- SPLIT WORKSPACE: Side-by-Side or Stacked -->
+          <div class="workspace-split layout-side" id="workspace-split">
+            <div class="editor-container" id="editor-container">
+              <div class="editor-header">
+                <div class="editor-header-left">
+                  <span class="editor-lang-badge" id="editor-lang-badge">HTML</span>
+                  <div class="layout-toggle-group" id="layout-toggle-group" role="group" aria-label="Disposición de vista previa">
+                    <button class="btn btn-ghost btn-xs btn-layout active" id="btn-layout-side" onclick="app.setLayoutMode('side')" title="Panel al lado (En paralelo)">
+                      &#x229E; Al lado
+                    </button>
+                    <button class="btn btn-ghost btn-xs btn-layout" id="btn-layout-stacked" onclick="app.setLayoutMode('stacked')" title="Panel debajo (Vertical)">
+                      &#x229F; Debajo
+                    </button>
+                  </div>
+                </div>
+                <div class="editor-actions">
+                  <button class="btn btn-ghost btn-sm" id="btn-reset-code" onclick="app.resetCode()" title="Restaurar código inicial">
+                    &#x1F504; Reset
+                  </button>
+                </div>
+              </div>
+              <div class="editor-wrapper" id="editor-wrapper">
+                <div class="line-numbers" id="line-numbers" aria-hidden="true">1</div>
+                <div class="editor-input-area">
+                  <textarea
+                    id="code-editor"
+                    class="code-textarea"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    autocomplete="off"
+                  ></textarea>
+                  <pre class="code-highlight" aria-hidden="true"><code id="code-highlight-content"></code></pre>
+                </div>
               </div>
             </div>
-            <div class="editor-wrapper" id="editor-wrapper">
-              <div class="line-numbers" id="line-numbers" aria-hidden="true">1</div>
-              <div class="editor-input-area">
-                <textarea
-                  id="code-editor"
-                  class="code-textarea"
-                  spellcheck="false"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  autocomplete="off"
-                ></textarea>
-                <pre class="code-highlight" aria-hidden="true"><code id="code-highlight-content"></code></pre>
+
+            <!-- REAL-TIME VISUAL OUTPUT PANEL -->
+            <div class="output-panel" id="output-panel">
+              <div class="output-panel-header">
+                <div class="output-panel-title">
+                  <span class="output-live-dot" aria-hidden="true"></span>
+                  <span id="output-panel-heading">&#x26A1; Vista de Resultados</span>
+                  <span class="output-badge" id="output-badge">En vivo</span>
+                </div>
+                <div class="output-panel-actions" id="output-panel-actions">
+                  <button class="btn btn-ghost btn-sm" id="btn-refresh-output" onclick="app.refreshOutput()" title="Refrescar resultado">
+                    &#x21BB; Refrescar
+                  </button>
+                  <button class="btn btn-ghost btn-sm" id="btn-clear-console" onclick="app.clearConsole()" title="Limpiar salida">
+                    &#x2715; Limpiar
+                  </button>
+                  <button class="btn btn-ghost btn-sm" id="btn-maximize-output" onclick="app.toggleMaximizeOutput()" title="Maximizar / Restaurar panel">
+                    &#x26F6; Maximizar
+                  </button>
+                </div>
+              </div>
+
+              <div class="output-panel-body">
+                <!-- Route 1: Web Preview -->
+                <div class="output-section hidden" id="output-section-web">
+                  <iframe id="web-preview-iframe" class="web-preview-iframe" sandbox="allow-scripts" title="Previsualización web en vivo"></iframe>
+                </div>
+
+                <!-- Route 2: Game / Logic Console -->
+                <div class="output-section hidden" id="output-section-games">
+                  <div class="console-screen" id="games-console-screen">
+                    <div class="console-prompt-line">
+                      <span class="console-prompt">&gt;&gt;&gt;</span> <span class="console-cmd" id="games-console-cmd">ejecutando script...</span>
+                    </div>
+                    <div class="console-output" id="games-console-output"></div>
+                  </div>
+                </div>
+
+                <!-- Route 3a: Linux / Bash Terminal -->
+                <div class="output-section hidden" id="output-section-terminal">
+                  <div class="terminal-screen" id="linux-terminal-screen">
+                    <div class="terminal-header-bar">
+                      <span class="term-dot term-dot-red"></span>
+                      <span class="term-dot term-dot-yellow"></span>
+                      <span class="term-dot term-dot-green"></span>
+                      <span class="term-title" id="terminal-screen-title">bash — user@codeacademy:~</span>
+                    </div>
+                    <div class="terminal-body" id="linux-terminal-body"></div>
+                  </div>
+                </div>
+
+                <!-- Route 3b: SQL Result Table -->
+                <div class="output-section hidden" id="output-section-sql">
+                  <div class="sql-result-wrap">
+                    <div class="sql-status-bar" id="sql-status-bar">
+                      <span class="sql-status-pill">PostgreSQL 16</span>
+                      <span class="sql-status-msg" id="sql-status-msg">Ejecutando consulta...</span>
+                    </div>
+                    <div class="sql-table-container" id="sql-table-container"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- REAL-TIME VISUAL OUTPUT PANEL -->
-          <div class="output-panel" id="output-panel">
-            <div class="output-panel-header">
-              <div class="output-panel-title">
-                <span class="output-live-dot" aria-hidden="true"></span>
-                <span id="output-panel-heading">&#x26A1; Vista de Resultados</span>
-                <span class="output-badge" id="output-badge">En vivo</span>
-              </div>
-              <div class="output-panel-actions" id="output-panel-actions">
-                <button class="btn btn-ghost btn-sm" id="btn-refresh-output" onclick="app.refreshOutput()" title="Refrescar resultado">
-                  &#x21BB; Refrescar
-                </button>
-                <button class="btn btn-ghost btn-sm" id="btn-clear-console" onclick="app.clearConsole()" title="Limpiar salida">
-                  &#x2715; Limpiar
-                </button>
-              </div>
-            </div>
-
-            <div class="output-panel-body">
-              <!-- Route 1: Web Preview -->
-              <div class="output-section hidden" id="output-section-web">
-                <iframe id="web-preview-iframe" class="web-preview-iframe" sandbox="allow-scripts" title="Previsualización web en vivo"></iframe>
-              </div>
-
-              <!-- Route 2: Game / Logic Console -->
-              <div class="output-section hidden" id="output-section-games">
-                <div class="console-screen" id="games-console-screen">
-                  <div class="console-prompt-line">
-                    <span class="console-prompt">&gt;&gt;&gt;</span> <span class="console-cmd" id="games-console-cmd">ejecutando script...</span>
-                  </div>
-                  <div class="console-output" id="games-console-output"></div>
-                </div>
-              </div>
-
-              <!-- Route 3a: Linux / Bash Terminal -->
-              <div class="output-section hidden" id="output-section-terminal">
-                <div class="terminal-screen" id="linux-terminal-screen">
-                  <div class="terminal-header-bar">
-                    <span class="term-dot term-dot-red"></span>
-                    <span class="term-dot term-dot-yellow"></span>
-                    <span class="term-dot term-dot-green"></span>
-                    <span class="term-title" id="terminal-screen-title">bash — user@codeacademy:~</span>
-                  </div>
-                  <div class="terminal-body" id="linux-terminal-body"></div>
-                </div>
-              </div>
-
-              <!-- Route 3b: SQL Result Table -->
-              <div class="output-section hidden" id="output-section-sql">
-                <div class="sql-result-wrap">
-                  <div class="sql-status-bar" id="sql-status-bar">
-                    <span class="sql-status-pill">PostgreSQL 16</span>
-                    <span class="sql-status-msg" id="sql-status-msg">Ejecutando consulta...</span>
-                  </div>
-                  <div class="sql-table-container" id="sql-table-container"></div>
-                </div>
-              </div>
-            </div>
+          <div class="result-panel hidden" id="result-panel" role="alert">
+            <div class="result-icon" id="result-icon" aria-hidden="true"></div>
+            <div class="result-message" id="result-message"></div>
           </div>
 
           <div class="editor-footer">
             <button class="btn btn-validate" id="btn-validate" onclick="app.validateCode()">
               &#x25B6; Validar / Ejecutar
             </button>
-          </div>
-
-          <div class="result-panel hidden" id="result-panel" role="alert">
-            <div class="result-icon" id="result-icon" aria-hidden="true"></div>
-            <div class="result-message" id="result-message"></div>
           </div>
         </section>
       </div>

@@ -26,6 +26,7 @@ class CodeAcademyApp {
   _init() {
     this.editor = new CodeEditor();
     this.editor.onCodeChange = (code) => this._onEditorChange(code);
+    this.layoutMode = localStorage.getItem('codeacademy_layout_mode') || 'side';
     this._initParticles();
     this._initExportImport();
     this._updateDashboard();
@@ -206,6 +207,51 @@ class CodeAcademyApp {
     this._toast('📖 Modo repaso: Revisa la teoría y tu código resuelto', 'info');
   }
 
+  setLayoutMode(mode) {
+    this.layoutMode = mode;
+    try {
+      localStorage.setItem('codeacademy_layout_mode', mode);
+    } catch (e) {}
+
+    const split = document.getElementById('workspace-split');
+    if (split) {
+      split.classList.remove('layout-side', 'layout-stacked', 'output-maximized');
+      split.classList.add(`layout-${mode}`);
+    }
+
+    const btnSide = document.getElementById('btn-layout-side');
+    const btnStacked = document.getElementById('btn-layout-stacked');
+    if (btnSide) btnSide.classList.toggle('active', mode === 'side');
+    if (btnStacked) btnStacked.classList.toggle('active', mode === 'stacked');
+
+    const maxBtn = document.getElementById('btn-maximize-output');
+    if (maxBtn) maxBtn.innerHTML = '&#x26F6; Maximizar';
+
+    if (this.editor) {
+      setTimeout(() => {
+        this.editor._syncScroll();
+        this.editor._updateLineNumbers();
+      }, 60);
+    }
+  }
+
+  toggleMaximizeOutput() {
+    const split = document.getElementById('workspace-split');
+    const maxBtn = document.getElementById('btn-maximize-output');
+    if (!split) return;
+
+    const isMax = split.classList.contains('output-maximized');
+    if (isMax) {
+      split.classList.remove('output-maximized');
+      split.classList.add(`layout-${this.layoutMode || 'side'}`);
+      if (maxBtn) maxBtn.innerHTML = '&#x26F6; Maximizar';
+    } else {
+      split.classList.remove('layout-side', 'layout-stacked');
+      split.classList.add('output-maximized');
+      if (maxBtn) maxBtn.innerHTML = '&#x21F3; Restaurar';
+    }
+  }
+
   switchTab(tab) {
     const isTheory = tab === 'theory';
     document.getElementById('content-theory').classList.toggle('hidden', !isTheory);
@@ -336,6 +382,7 @@ class CodeAcademyApp {
       `btn btn-route ${ROUTE_BTN[level.route]}`;
 
     this.editor.setLanguage(level.editorLang || 'bash');
+    this.setLayoutMode(this.layoutMode || 'side');
     this._initOutputPanel(level);
     this.editor.setValue(level.starterCode);
 
