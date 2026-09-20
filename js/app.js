@@ -426,15 +426,12 @@ class CodeAcademyApp {
     }
 
     if (result.success) {
-      // 3. Código completo y correcto: Si añade lo que pide el reto correctamente, se lleva sus 3 estrellas bien merecidas
-      let stars = 3;
-      if (this.hintUsed || this.attempts > 2) {
-        stars = 2;
-      }
+      // Código correcto y completo: Debe otorgar 3 estrellas obligatoriamente
+      const stars = 3;
       this._showResult('success', '✅', result.message);
       this._onLevelComplete(true, result.message, stars);
     } else {
-      // 2. Código incompleto o corto: Si avanza pero le falta parte del reto (se queda corto), recibe 1 o 2 estrellas
+      // Código incompleto o con errores (pero avanzado): Debe otorgar 1 o 2 estrellas
       let stars = 2;
       if (this.attempts > 1 || this.hintUsed) {
         stars = 1;
