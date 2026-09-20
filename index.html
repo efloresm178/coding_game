@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CodeAcademy_Game — Plataforma educativa gamificada de programación con 45 niveles progresivos en 3 rutas de aprendizaje. Aprende HTML, CSS, TypeScript, Python, C#, SQL y más.">
+  <title>CodeAcademy_Game ⚡ — Aprende Programación Jugando</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+
+  <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+  <div id="app">
+
+    <!-- SCREEN: DASHBOARD -->
+    <div id="screen-dashboard" class="screen active" role="main">
+      <header class="dashboard-header" role="banner">
+        <div class="logo" aria-label="CodeAcademy Game">
+          <span class="logo-icon" aria-hidden="true">&#x26A1;</span>
+          <span class="logo-text">Code<span class="logo-accent">Academy</span></span>
+        </div>
+        <div class="header-actions">
+          <button id="btn-import" class="btn btn-ghost" title="Importar progreso desde archivo JSON">
+            &#x1F4C2; Importar
+          </button>
+          <button id="btn-export" class="btn btn-ghost" title="Exportar progreso a archivo JSON">
+            &#x1F4BE; Exportar
+          </button>
+          <div class="player-stats">
+            <div class="xp-bar-container">
+              <div class="xp-bar-fill" id="global-xp-bar"></div>
+            </div>
+            <span class="xp-text" id="global-xp-text">0 XP</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard-main">
+        <section class="hero-section">
+          <h1 class="hero-title" id="hero-heading">
+            Domina el <span class="gradient-text">Arte del Codigo</span>
+          </h1>
+          <p class="hero-subtitle">
+            3 rutas de aprendizaje &bull; 45 niveles progresivos &bull; 0 excusas
+          </p>
+          <div class="global-progress">
+            <div class="progress-stats">
+              <div class="stat-card">
+                <span class="stat-number" id="stat-completed">0</span>
+                <span class="stat-label">Niveles completados</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="stat-xp">0</span>
+                <span class="stat-label">XP Total</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="stat-stars">0</span>
+                <span class="stat-label">&#11088; Estrellas</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="routes-grid">
+          <!-- Route 1 -->
+          <article class="route-card" id="route-card-1">
+            <div class="route-glow route-glow-1" aria-hidden="true"></div>
+            <div class="route-icon" aria-hidden="true">&#x1F310;</div>
+            <span class="route-badge badge-web">Web &amp; UI</span>
+            <h2 class="route-title">Ruta 1: Web &amp; UI</h2>
+            <p class="route-desc">HTML, CSS, TypeScript &mdash; Construye interfaces impresionantes desde cero hasta nivel profesional.</p>
+            <div class="route-langs">
+              <span class="lang-tag lang-html">HTML</span>
+              <span class="lang-tag lang-css">CSS</span>
+              <span class="lang-tag lang-ts">TypeScript</span>
+            </div>
+            <div class="route-progress-bar">
+              <div class="route-progress-fill" id="route1-progress" style="width:0%"></div>
+            </div>
+            <div class="route-progress-text">
+              <span id="route1-completed">0</span>/15 niveles
+            </div>
+            <button class="btn btn-route btn-route-1" id="btn-enter-route-1" onclick="app.goToRoute(1)">
+              Entrar a la Ruta &#x2192;
+            </button>
+          </article>
+
+          <!-- Route 2 -->
+          <article class="route-card" id="route-card-2">
+            <div class="route-glow route-glow-2" aria-hidden="true"></div>
+            <div class="route-icon" aria-hidden="true">&#x1F3AE;</div>
+            <span class="route-badge badge-game">Juegos &amp; Logica</span>
+            <h2 class="route-title">Ruta 2: Juegos &amp; Logica</h2>
+            <p class="route-desc">Python, C#, C++, Lua &mdash; Piensa como una maquina. Crea logica digna de un videojuego AAA.</p>
+            <div class="route-langs">
+              <span class="lang-tag lang-python">Python</span>
+              <span class="lang-tag lang-csharp">C#</span>
+              <span class="lang-tag lang-cpp">C++</span>
+              <span class="lang-tag lang-lua">Lua</span>
+            </div>
+            <div class="route-progress-bar">
+              <div class="route-progress-fill" id="route2-progress" style="width:0%"></div>
+            </div>
+            <div class="route-progress-text">
+              <span id="route2-completed">0</span>/15 niveles
+            </div>
+            <button class="btn btn-route btn-route-2" id="btn-enter-route-2" onclick="app.goToRoute(2)">
+              Entrar a la Ruta &#x2192;
+            </button>
+          </article>
+
+          <!-- Route 3 -->
+          <article class="route-card" id="route-card-3">
+            <div class="route-glow route-glow-3" aria-hidden="true"></div>
+            <div class="route-icon" aria-hidden="true">&#x1F5A5;&#xFE0F;</div>
+            <span class="route-badge badge-server">Servidores &amp; Datos</span>
+            <h2 class="route-title">Ruta 3: Servidores &amp; Datos</h2>
+            <p class="route-desc">Linux, SQL, Bash &mdash; Domina la infraestructura. Habla con servidores en su propio idioma.</p>
+            <div class="route-langs">
+              <span class="lang-tag lang-linux">Linux</span>
+              <span class="lang-tag lang-sql">SQL</span>
+              <span class="lang-tag lang-bash">Bash</span>
+            </div>
+            <div class="route-progress-bar">
+              <div class="route-progress-fill" id="route3-progress" style="width:0%"></div>
+            </div>
+            <div class="route-progress-text">
+              <span id="route3-completed">0</span>/15 niveles
+            </div>
+            <button class="btn btn-route btn-route-3" id="btn-enter-route-3" onclick="app.goToRoute(3)">
+              Entrar a la Ruta &#x2192;
+            </button>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <!-- SCREEN: ROUTE -->
+    <div id="screen-route" class="screen">
+      <div class="route-screen-header">
+        <button class="btn btn-ghost btn-back" onclick="app.goToDashboard()">&#x2190; Dashboard</button>
+        <h2 class="route-screen-title" id="route-screen-title">Ruta 1</h2>
+        <div class="route-screen-badge" id="route-screen-progress">0/15</div>
+      </div>
+      <div class="levels-grid" id="levels-grid"></div>
+    </div>
+
+    <!-- SCREEN: LEVEL -->
+    <div id="screen-level" class="screen">
+      <div class="level-header">
+        <button class="btn btn-ghost btn-back" id="btn-back-to-route" onclick="app.backToRoute()">&#x2190; Ruta</button>
+        <div class="level-info">
+          <span class="level-badge" id="level-badge">Nivel 1</span>
+          <h2 class="level-title" id="level-title">Tu Primer Documento HTML</h2>
+        </div>
+        <div class="level-meta">
+          <span class="level-difficulty level-card-difficulty diff-easy" id="level-difficulty">Facil</span>
+          <span class="level-xp" id="level-xp">+50 XP</span>
+        </div>
+      </div>
+
+      <div class="level-layout">
+        <aside class="level-panel panel-left">
+          <div class="theory-card">
+            <div class="panel-tabs">
+              <button class="tab-btn active" id="tab-theory" onclick="app.switchTab('theory')">&#x1F4D6; Teoria</button>
+              <button class="tab-btn" id="tab-challenge" onclick="app.switchTab('challenge')">&#x1F3AF; Reto</button>
+            </div>
+            <div class="tab-content" id="content-theory"></div>
+            <div class="tab-content hidden" id="content-challenge"></div>
+          </div>
+          <button class="btn btn-hint" id="btn-hint" onclick="app.showHint()">
+            &#x1F4A1; Ver Pista
+          </button>
+          <div class="hint-card hidden" id="hint-card">
+            <div class="hint-header">&#x1F4A1; Pista Conceptual</div>
+            <div class="hint-content" id="hint-content"></div>
+          </div>
+        </aside>
+
+        <section class="level-panel panel-right">
+          <div class="editor-container" id="editor-container">
+            <div class="editor-header">
+              <span class="editor-lang-badge" id="editor-lang-badge">HTML</span>
+              <div class="editor-actions">
+                <button class="btn btn-ghost btn-sm" id="btn-reset-code" onclick="app.resetCode()">
+                  &#x1F504; Reset
+                </button>
+              </div>
+            </div>
+            <div class="editor-wrapper" id="editor-wrapper">
+              <div class="line-numbers" id="line-numbers" aria-hidden="true">1</div>
+              <div class="editor-input-area">
+                <textarea
+                  id="code-editor"
+                  class="code-textarea"
+                  spellcheck="false"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  autocomplete="off"
+                ></textarea>
+                <pre class="code-highlight" aria-hidden="true"><code id="code-highlight-content"></code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- REAL-TIME VISUAL OUTPUT PANEL -->
+          <div class="output-panel" id="output-panel">
+            <div class="output-panel-header">
+              <div class="output-panel-title">
+                <span class="output-live-dot" aria-hidden="true"></span>
+                <span id="output-panel-heading">&#x26A1; Vista de Resultados</span>
+                <span class="output-badge" id="output-badge">En vivo</span>
+              </div>
+              <div class="output-panel-actions" id="output-panel-actions">
+                <button class="btn btn-ghost btn-sm" id="btn-refresh-output" onclick="app.refreshOutput()" title="Refrescar resultado">
+                  &#x21BB; Refrescar
+                </button>
+                <button class="btn btn-ghost btn-sm" id="btn-clear-console" onclick="app.clearConsole()" title="Limpiar salida">
+                  &#x2715; Limpiar
+                </button>
+              </div>
+            </div>
+
+            <div class="output-panel-body">
+              <!-- Route 1: Web Preview -->
+              <div class="output-section hidden" id="output-section-web">
+                <iframe id="web-preview-iframe" class="web-preview-iframe" sandbox="allow-scripts" title="Previsualización web en vivo"></iframe>
+              </div>
+
+              <!-- Route 2: Game / Logic Console -->
+              <div class="output-section hidden" id="output-section-games">
+                <div class="console-screen" id="games-console-screen">
+                  <div class="console-prompt-line">
+                    <span class="console-prompt">&gt;&gt;&gt;</span> <span class="console-cmd" id="games-console-cmd">ejecutando script...</span>
+                  </div>
+                  <div class="console-output" id="games-console-output"></div>
+                </div>
+              </div>
+
+              <!-- Route 3a: Linux / Bash Terminal -->
+              <div class="output-section hidden" id="output-section-terminal">
+                <div class="terminal-screen" id="linux-terminal-screen">
+                  <div class="terminal-header-bar">
+                    <span class="term-dot term-dot-red"></span>
+                    <span class="term-dot term-dot-yellow"></span>
+                    <span class="term-dot term-dot-green"></span>
+                    <span class="term-title" id="terminal-screen-title">bash — user@codeacademy:~</span>
+                  </div>
+                  <div class="terminal-body" id="linux-terminal-body"></div>
+                </div>
+              </div>
+
+              <!-- Route 3b: SQL Result Table -->
+              <div class="output-section hidden" id="output-section-sql">
+                <div class="sql-result-wrap">
+                  <div class="sql-status-bar" id="sql-status-bar">
+                    <span class="sql-status-pill">PostgreSQL 16</span>
+                    <span class="sql-status-msg" id="sql-status-msg">Ejecutando consulta...</span>
+                  </div>
+                  <div class="sql-table-container" id="sql-table-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-footer">
+            <button class="btn btn-validate" id="btn-validate" onclick="app.validateCode()">
+              &#x25B6; Validar / Ejecutar
+            </button>
+          </div>
+
+          <div class="result-panel hidden" id="result-panel" role="alert">
+            <div class="result-icon" id="result-icon" aria-hidden="true"></div>
+            <div class="result-message" id="result-message"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Level Complete Overlay -->
+      <div class="level-complete-overlay hidden" id="level-complete-overlay">
+        <div class="level-complete-card">
+          <div class="complete-animation" aria-hidden="true">&#x1F389;</div>
+          <h2 class="complete-title">Nivel Completado!</h2>
+          <div class="stars-display" id="stars-display"></div>
+          <div class="xp-earned" id="xp-earned">+50 XP</div>
+          <div class="complete-actions">
+            <button class="btn btn-route btn-route-1" id="btn-next-level" onclick="app.nextLevel()">
+              Siguiente Nivel &#x2192;
+            </button>
+            <button class="btn btn-ghost" onclick="app.backToRoute()">Ver Ruta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <input type="file" id="import-file-input" accept=".json" style="display:none">
+  <div id="toast-container" aria-live="polite"></div>
+
+  <script src="js/levels.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
