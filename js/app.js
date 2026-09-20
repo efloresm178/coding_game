@@ -386,20 +386,21 @@ class CodeAcademyApp {
     const prevStars = existing ? (existing.stars || 0) : 0;
     const prevXP    = existing ? (existing.xp || 0) : 0;
 
-    // Cálculo accesible y coherente de estrellas:
-    // ⭐⭐⭐ 3 Estrellas: Resuelto con fluidez (hasta 5 intentos sin pista manual, o hasta 2 intentos con pista)
-    // ⭐⭐ 2 Estrellas: Resuelto con pista o tras varios intentos de depuración (hasta 8 intentos)
-    // ⭐ 1 Estrella: Resuelto con perseverancia tras múltiples intentos (> 8 intentos)
+    // Cálculo de estrellas según intentos y errores:
+    // • Completar al primer intento (sin errores previos y sin pista): 3 estrellas ⭐⭐⭐
+    // • 1 error o intento fallido previo (attempts === 2) o uso de pista: 2 estrellas ⭐⭐
+    // • 2 o más errores previos (attempts >= 3): 1 estrella ⭐
     let currentStars = 3;
-    if (this.hintUsed && this.attempts > 2) {
+    if (this.attempts === 2) {
       currentStars = 2;
-    }
-    if (this.attempts > 5) {
-      currentStars = 2;
-    }
-    if (this.attempts > 8 || (this.hintUsed && this.attempts > 5)) {
+    } else if (this.attempts >= 3) {
       currentStars = 1;
     }
+
+    if (this.hintUsed && currentStars > 1) {
+      currentStars--;
+    }
+
     currentStars = Math.max(1, currentStars);
 
     // Keep highest stars record
