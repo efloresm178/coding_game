@@ -200,6 +200,11 @@ class CodeAcademyApp {
     }
   }
 
+  reviewLevel() {
+    document.getElementById('level-complete-overlay').classList.add('hidden');
+    this._toast('📖 Modo repaso activo', 'info');
+  }
+
   switchTab(tab) {
     const isTheory = tab === 'theory';
     document.getElementById('content-theory').classList.toggle('hidden', !isTheory);
@@ -377,41 +382,73 @@ class CodeAcademyApp {
 
   _onLevelComplete() {
     const level = this.currentLevel;
-    const alreadyDone = this.isCompleted(level.id);
+    const existing = this.state.completedLevels[level.id];
+    const prevStars = existing ? (existing.stars || 0) : 0;
+    const prevXP    = existing ? (existing.xp || 0) : 0;
 
-    if (alreadyDone) {
-      setTimeout(() => this._showCompleteOverlay(this.getStars(level.id), 0), 700);
-      return;
+    // Calculate stars for current attempt: start at 3, lose 1 for hint, lose 1 for 3+ attempts
+    let currentStars = 3;
+    if (this.hintUsed)     currentStars--;
+    if (this.attempts > 3) currentStars--;
+    currentStars = Math.max(1, currentStars);
+
+    // Keep highest stars record
+    const bestStars = Math.max(prevStars, currentStars);
+    const maxLevelXP = Math.round(level.xp * (bestStars / 3));
+
+    let xpEarned = 0;
+    let isNewBest = false;
+
+    if (!existing) {
+      // First completion
+      xpEarned = maxLevelXP;
+      this.state.totalXP += xpEarned;
+      this.state.completedLevels[level.id] = {
+        stars: bestStars,
+        xp: maxLevelXP,
+        completedAt: Date.now()
+      };
+      this._saveState();
+      this._updateDashboard();
+      this._spawnXPPopup(xpEarned);
+    } else if (currentStars > prevStars) {
+      // Improved stars on repeated attempt!
+      isNewBest = true;
+      xpEarned = Math.max(0, maxLevelXP - prevXP);
+      this.state.totalXP += xpEarned;
+      this.state.completedLevels[level.id] = {
+        stars: bestStars,
+        xp: maxLevelXP,
+        completedAt: Date.now()
+      };
+      this._saveState();
+      this._updateDashboard();
+      if (xpEarned > 0) {
+        this._spawnXPPopup(xpEarned);
+      }
+      this._toast('🌟 ¡Nuevo récord de estrellas conseguido!', 'success');
     }
 
-    // Calculate stars: start at 3, lose 1 for hint, lose 1 for 3+ attempts
-    let stars = 3;
-    if (this.hintUsed)       stars--;
-    if (this.attempts > 3)   stars--;
-    stars = Math.max(1, stars);
-
-    // XP proportional to stars
-    const xpEarned = Math.round(level.xp * (stars / 3));
-    this.state.totalXP += xpEarned;
-    this.state.completedLevels[level.id] = {
-      stars,
-      xp: xpEarned,
-      completedAt: Date.now()
-    };
-    this._saveState();
-    this._updateDashboard();
-    this._spawnXPPopup(xpEarned);
-
-    setTimeout(() => this._showCompleteOverlay(stars, xpEarned), 700);
+    setTimeout(() => this._showCompleteOverlay(bestStars, xpEarned, isNewBest, !!existing), 700);
   }
 
-  _showCompleteOverlay(stars, xpEarned) {
+  _showCompleteOverlay(stars, xpEarned, isNewBest = false, wasAlreadyCompleted = false) {
     const starsHtml = Array.from({ length: 3 }, (_, i) =>
       `<span class="star-anim" style="animation-delay:${0.1 + i * 0.17}s">${i < stars ? '⭐' : '☆'}</span>`
     ).join('');
 
     document.getElementById('stars-display').innerHTML = starsHtml;
-    document.getElementById('xp-earned').textContent   = xpEarned > 0 ? `+${xpEarned} XP` : 'Ya completado';
+
+    let xpText = '';
+    if (xpEarned > 0) {
+      xpText = `+${xpEarned} XP`;
+    } else if (wasAlreadyCompleted) {
+      xpText = 'Récord mantenido';
+    } else {
+      xpText = '+0 XP';
+    }
+
+    document.getElementById('xp-earned').textContent   = xpText;
     document.getElementById('level-complete-overlay').classList.remove('hidden');
 
     if (this.currentLevel.number >= 15) {
